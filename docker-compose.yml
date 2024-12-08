@@ -17,7 +17,6 @@ services:
       retries: 5
     networks:
       - backend_services
-
   order-service:
     image: serpild/order-service-l8:latest
     container_name: 'order-service'
@@ -41,7 +40,6 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-
   product-service:
     image: serpild/product-service-l8:latest
     container_name: 'product-service'
@@ -55,24 +53,18 @@ services:
       retries: 5
     networks:
       - backend_services
+networks:
+  backend_services:
+    driver: bridge
 
+     # Store Front (Frontend Service)
   store-front:
     image: "serpild/store-front-l8:latest"
-    container_name: "store-front"
-    restart: always
     ports:
       - "80:80"
     environment:
       - VUE_APP_ORDER_SERVICE_URL=http://order-service:3000
-      - VUE_APP_PRODUCT_SERVICE_URL=http://product-service:3002
+      - VUE_APP_PRODUCT_SERVICE_URL=http://product-service:3030
     depends_on:
-      order-service:
-        condition: service_healthy
-      product-service:
-        condition: service_healthy
-    networks:
-      - backend_services
-
-networks:
-  backend_services:
-    driver: bridge
+      - order-service
+      - product-service
