@@ -1,65 +1,38 @@
-version: "3.7"
-services:
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: 'rabbitmq'
-    restart: always
-    environment:
-      - "RABBITMQ_DEFAULT_USER=username"
-      - "RABBITMQ_DEFAULT_PASS=password"
-    ports:
-      - 15672:15672
-      - 5672:5672
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      - backend_services
-  order-service:
-    image: serpild/order-service-l8:latest
-    container_name: 'order-service'
-    restart: always
-    ports:
-      - 3000:3000
-    healthcheck:
-      test: ["CMD", "wget", "-O", "/dev/null", "-q", "http://order-service:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    environment:
-      - ORDER_QUEUE_HOSTNAME=rabbitmq
-      - ORDER_QUEUE_PORT=5672
-      - ORDER_QUEUE_USERNAME=username
-      - ORDER_QUEUE_PASSWORD=password
-      - ORDER_QUEUE_NAME=orders
-      - ORDER_QUEUE_RECONNECT_LIMIT=3
-    networks:
-      - backend_services
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-  product-service:
-    image: serpild/product-service-l8:latest
-    container_name: 'product-service'
-    restart: always
-    ports:
-      - 3002:3002
-    healthcheck:
-      test: ["CMD", "wget", "-O", "/dev/null", "-q", "http://product-service:3002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      - backend_services
-networks:
-  backend_services:
-    driver: bridge
+version: '3.8'
 
-     # Store Front (Frontend Service)
+services:
+  # RabbitMQ Service
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    ports:
+      - "5672:5672"   # RabbitMQ messaging port
+      - "15672:15672" # RabbitMQ management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=myuser
+      - RABBITMQ_DEFAULT_PASS=mypassword
+
+  # Order Service
+  order-service:
+    image: "serpild/order-service"
+    ports:
+      - "3000:3000"
+    environment:
+      - RABBITMQ_CONNECTION_STRING=amqp://myuser:mypassword@rabbitmq:5672/
+      - PORT=3000
+    depends_on:
+      - rabbitmq
+
+  # Product Service
+  product-service:
+    image: "serpild/product-service"
+    ports:
+      - "3030:3030"
+    environment:
+      - PORT=3030
+
+  # Store Front (Frontend Service)
   store-front:
-    image: "serpild/store-front-l8:latest"
+    image: serpild/store-front-l8:latest
     ports:
       - "80:80"
     environment:
@@ -68,3 +41,6 @@ networks:
     depends_on:
       - order-service
       - product-service
+
+ 
+
